@@ -16,3 +16,10 @@ PolicyEngine --> ActionExecutor
 ActionExecutor --> CRM
 ActionExecutor --> Monitoring
 ```
+
+
+---
+
+# License
+
+MIT License
