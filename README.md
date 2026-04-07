@@ -1,25 +1,22 @@
 # AI Proactive Customer Operations
 
-Multi-agent AI orchestration system for proactive CX automation.
+Explicit multi-agent DAG workflow system.
 
 ## Architecture
 
 ```mermaid
-flowchart LR
+flowchart TD
 
-User --> IntentClassifier
-IntentClassifier --> RouterAgent
-RouterAgent --> DomainAgents
-DomainAgents --> ReasoningEngine
-ReasoningEngine --> PolicyEngine
-PolicyEngine --> ActionExecutor
-ActionExecutor --> CRM
-ActionExecutor --> Monitoring
+User --> PlannerAgent
+PlannerAgent --> SentimentAgent
+SentimentAgent --> PolicyAgent
+PolicyAgent --> ActionAgent
 ```
 
+## Reasoning Trace Example
 
----
-
-# License
-
-MIT License
+{
+"sentiment":"negative",
+"policy":"escalate",
+"action":"create_ticket"
+}
