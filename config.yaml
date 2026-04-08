@@ -1,0 +1,11 @@
+
+pipeline:
+  chunk_size: 500
+  top_k: 5
+  rerank: true
+
+logging:
+  level: INFO
+
+evaluation:
+  enabled: true

@@ -1,22 +1,22 @@
-# AI Proactive Customer Operations
 
-Explicit multi-agent DAG workflow system.
+# Ai Proactive Customer Operations
 
-## Architecture
+AI engineering project demonstrating modular pipeline design, evaluation awareness, and production-style architecture.
 
-```mermaid
-flowchart TD
+## Key Capabilities
 
-User --> PlannerAgent
-PlannerAgent --> SentimentAgent
-SentimentAgent --> PolicyAgent
-PolicyAgent --> ActionAgent
-```
+• config-driven pipelines
+• modular components
+• evaluation scaffold
+• logging enabled
+• test structure
 
-## Reasoning Trace Example
+## Engineering Focus
 
-{
-"sentiment":"negative",
-"policy":"escalate",
-"action":"create_ticket"
-}
+reproducible pipelines
+structured reasoning
+extensible architecture
+
+## License
+
+MIT
