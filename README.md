@@ -7,12 +7,12 @@ Multi-agent DAG orchestration workflow for AI-driven decision automation.
 
 ```mermaid
 flowchart TD
-User --> Planner
-Planner --> Sentiment
-Sentiment --> Policy
-Policy --> Action
-Action --> Tools
-``
+User --> PlannerAgent
+PlannerAgent --> SentimentAgent
+SentimentAgent --> PolicyAgent
+PolicyAgent --> ActionAgent
+ActionAgent --> Tools
+```
 
 ## Agent Graph
 planner → sentiment → policy → action
