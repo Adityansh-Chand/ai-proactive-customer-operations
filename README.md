@@ -18,10 +18,10 @@ ActionAgent --> Tools
 planner → sentiment → policy → action
 
 ### Highlights
-multi-agent workflow
-observable reasoning trace
-tool abstraction
-modular agent roles
+multi-agent workflow, 
+observable reasoning trace, 
+tool abstraction and 
+modular agent roles.
 
 ## License
 MIT
