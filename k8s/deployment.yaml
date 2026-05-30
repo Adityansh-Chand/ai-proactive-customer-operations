@@ -1,37 +1,79 @@
-
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: customer-ops-data
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
 apiVersion: apps/v1
 kind: Deployment
-
 metadata:
-
-  name: ai-service
-
+  name: customer-ops
+  labels:
+    app: customer-ops
 spec:
-
   replicas: 2
-
   selector:
-
     matchLabels:
-
-      app: ai-service
-
+      app: customer-ops
   template:
-
     metadata:
-
       labels:
-
-        app: ai-service
-
+        app: customer-ops
     spec:
-
       containers:
-
-      - name: ai-service
-
-        image: ai-service
-
-        ports:
-
-        - containerPort: 8000
+        - name: api
+          image: customer-ops:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8000
+          env:
+            - name: API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: customer-ops-secrets
+                  key: api-key
+                  optional: true
+            - name: APP_DB_PATH
+              value: /data/app.sqlite3
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          volumeMounts:
+            - name: data
+              mountPath: /data
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: customer-ops-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: customer-ops
+spec:
+  selector:
+    app: customer-ops
+  ports:
+    - port: 80
+      targetPort: 8000
