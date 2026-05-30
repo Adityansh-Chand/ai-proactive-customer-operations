@@ -6,10 +6,10 @@ def route_request(message):
     if "refund" in message:
         return "returns_agent"
 
-    if "delay" in message:
+    if "delay" in message or "late" in message:
         return "delivery_agent"
 
-    if "track" in message:
+    if "track" in message or "where is" in message:
         return "tracking_agent"
 
-    return "complaint_agent"
+    return "support_agent"

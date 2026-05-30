@@ -3,7 +3,7 @@ def decide(context):
     if context["sentiment"]=="negative":
         return "escalate"
 
-    if context["delay_risk"]:
+    if context.get("delay_risk"):
         return "offer_credit"
 
     return "auto_resolve"
