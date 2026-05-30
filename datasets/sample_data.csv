@@ -1,4 +1,5 @@
-id,feature,label
-1,example,0
-2,example,1
-3,example,0
+id,customer_id,message,expected_policy,expected_action
+1,cust_001,"I am angry about a late delivery and want this escalated",escalate,create_ticket
+2,cust_002,"My package is delayed but I just need help",offer_credit,apply_credit
+3,cust_003,"Can you track where is my order",send_tracking_update,send_tracking_update
+4,cust_004,"I need a refund for the wrong item",refund_review,refund_review
