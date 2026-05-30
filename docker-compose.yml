@@ -2,11 +2,20 @@
 version: "3.9"
 
 services:
-
   api:
-
     build: .
-
+    environment:
+      API_KEY: ${API_KEY:-}
+      APP_DB_PATH: /data/app.sqlite3
     ports:
-
       - "8000:8000"
+    volumes:
+      - customer-ops-data:/data
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  customer-ops-data:

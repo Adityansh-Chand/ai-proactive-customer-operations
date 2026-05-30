@@ -1,0 +1,18 @@
+{
+  "customer_message": {
+    "event_id": "string",
+    "customer_id": "string",
+    "channel": "email | chat | phone | social",
+    "message": "string",
+    "order_id": "string",
+    "account_tier": "free | standard | enterprise",
+    "sla_due_at": "ISO-8601 timestamp",
+    "created_at": "ISO-8601 timestamp"
+  },
+  "decision_label": {
+    "event_id": "string",
+    "expected_policy": "escalate | offer_credit | refund_review | send_tracking_update | auto_resolve",
+    "expected_action": "string",
+    "reviewed_by": "string"
+  }
+}

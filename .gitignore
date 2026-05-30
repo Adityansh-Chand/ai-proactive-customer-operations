@@ -20,6 +20,9 @@ dist/
 build/
 
 coverage/
+data/
+*.sqlite3
+*.db
 
 .ipynb_checkpoints/
 
