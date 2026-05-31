@@ -44,6 +44,12 @@ python evaluation/evaluate.py
 uvicorn api.server:app --reload --port 8000
 ```
 
+With the server running, use a second terminal for the smoke check:
+
+```bash
+python scripts/smoke_test.py
+```
+
 Docker:
 
 ```bash
@@ -52,7 +58,8 @@ docker compose up --build
 ```
 
 Kubernetes manifests live in `k8s/deployment.yaml` and include probes, resource
-limits, a Service, and a PVC for the SQLite event store.
+limits, a Service, and a PVC for the SQLite event store. The default manifest
+uses one replica because SQLite is the default event store.
 
 ## Highlights
 
