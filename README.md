@@ -23,6 +23,8 @@ flowchart TD
 - `GET /events` protected when `API_KEY` is set
 - `POST /decide`
 
+See `DEMO.md` for terminal demo steps, curl commands, and sample request/response files.
+
 Example:
 
 ```json

@@ -1,0 +1,15 @@
+{
+  "events": [
+    {
+      "event_type": "customer_decision",
+      "payload": {
+        "policy": "offer_credit",
+        "action": {
+          "type": "apply_credit",
+          "status": "applied"
+        }
+      },
+      "created_at": "2026-05-31 10:00:00"
+    }
+  ]
+}

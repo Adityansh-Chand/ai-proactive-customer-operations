@@ -1,0 +1,8 @@
+{
+  "message": "My package is delayed but I just need help",
+  "customer_id": "cust_002",
+  "metadata": {
+    "channel": "chat",
+    "account_tier": "standard"
+  }
+}
