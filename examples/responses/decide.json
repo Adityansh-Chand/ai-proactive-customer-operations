@@ -1,0 +1,32 @@
+{
+  "planner": {
+    "tasks": [
+      "route",
+      "sentiment",
+      "policy",
+      "action"
+    ],
+    "priority": "normal"
+  },
+  "route": "delivery_agent",
+  "sentiment": "neutral",
+  "context": {
+    "intent": "My package is delayed but I just need help",
+    "customer_id": "cust_002",
+    "route": "delivery_agent",
+    "sentiment": "neutral",
+    "priority": "normal",
+    "delay_risk": true,
+    "metadata": {
+      "channel": "chat",
+      "account_tier": "standard"
+    }
+  },
+  "policy": "offer_credit",
+  "action": {
+    "type": "apply_credit",
+    "status": "applied",
+    "user": "cust_002",
+    "amount": 10
+  }
+}

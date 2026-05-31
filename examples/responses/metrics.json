@@ -1,0 +1,6 @@
+{
+  "uptime_seconds": 12.345,
+  "counters": {
+    "decisions_total": 1
+  }
+}
