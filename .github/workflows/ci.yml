@@ -5,7 +5,8 @@ on:
   pull_request:
 
 jobs:
-  test:
+  test-and-evaluate:
+    name: Test and evaluate
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -18,5 +19,11 @@ jobs:
         run: python -m pytest -q
       - name: Run evaluation
         run: python evaluation/evaluate.py
-      - name: Build container
-        run: docker build -t customer-ops:${{ github.sha }} .
+
+  docker-build:
+    name: Docker image build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build service image
+        run: docker build --file Dockerfile --tag customer-ops:${{ github.sha }} .
