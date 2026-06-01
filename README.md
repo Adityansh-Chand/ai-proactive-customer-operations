@@ -63,6 +63,10 @@ Kubernetes manifests live in `k8s/deployment.yaml` and include probes, resource
 limits, a Service, and a PVC for the SQLite event store. The default manifest
 uses one replica because SQLite is the default event store.
 
+Dockerfile, Docker Compose, and Kubernetes configuration are validated by static
+inspection/YAML parsing in this workspace. Runtime container and cluster
+validation remains a CI or cloud-environment step.
+
 ## Highlights
 
 - Explicit trace for planner, route, sentiment, policy, and action.
