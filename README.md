@@ -67,6 +67,15 @@ Dockerfile, Docker Compose, and Kubernetes configuration are validated by static
 inspection/YAML parsing in this workspace. Runtime container and cluster
 validation remains a CI or cloud-environment step.
 
+## Reviewer Status
+
+- Purpose: customer operations workflow for routing messages through policy and action decisions.
+- Quickstart: run tests/eval, start `uvicorn api.server:app --reload --port 8000`, then run `python scripts/smoke_test.py`.
+- Demo path: use `DEMO.md` for curl examples and sample request/response files.
+- Deployment status: local tests and smoke tests pass; Docker/Compose/Kubernetes config is present; Docker image builds are validated in CI; cloud deployment is pending.
+- Remaining gaps: live CRM integration, production policy sources, managed auth/secrets, observability, cloud deployment, and production data governance.
+- Portfolio index: https://github.com/Adityansh-Chand/ai-engineering-portfolio
+
 ## Highlights
 
 - Explicit trace for planner, route, sentiment, policy, and action.
