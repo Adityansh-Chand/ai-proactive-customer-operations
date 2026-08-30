@@ -1,8 +1,8 @@
-
 fastapi
 uvicorn
 pandas
-scikit-learn
 numpy
+scikit-learn==1.8.0
+joblib
 pytest
 httpx

@@ -1,8 +1,7 @@
 {
-  "message": "My package is delayed but I just need help",
+  "message": "my parcel still has not turned up and I am losing patience",
   "customer_id": "cust_002",
-  "metadata": {
-    "channel": "chat",
-    "account_tier": "standard"
-  }
+  "account_tier": "enterprise",
+  "created_at": "2026-04-06T09:00:00+00:00",
+  "sla_due_at": "2026-04-06T13:00:00+00:00"
 }
