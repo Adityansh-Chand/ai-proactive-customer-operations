@@ -2,12 +2,14 @@
 from tools.actions import (
     apply_credit,
     create_ticket,
+    link_to_incident,
     queue_refund_review,
     send_knowledge_response,
     send_tracking_update,
 )
 
 POLICY_TO_ACTION = {
+    "incident_response": "link_to_incident",
     "escalate": "create_ticket",
     "offer_credit": "apply_credit",
     "refund_review": "refund_review",
@@ -30,6 +32,8 @@ def action_agent(policy, context=None):
     user = context.get("customer_id", "anonymous")
     issue = context.get("intent", "")
 
+    if policy == "incident_response":
+        return link_to_incident(user, context.get("incident"))
     if policy == "escalate":
         return create_ticket(issue)
     if policy == "offer_credit":
