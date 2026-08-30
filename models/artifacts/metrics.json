@@ -1,0 +1,70 @@
+{
+  "model_type": "TF-IDF (word + char n-grams) -> LogisticRegression, x2",
+  "data_source": "synthetic -- training/generate_corpus.py",
+  "architecture": "learned intent and sentiment, deterministic policy and action layer",
+  "n_total": 2400,
+  "n_train": 1780,
+  "n_test": 620,
+  "random_state": 42,
+  "split": "held-out TEMPLATES, not rows -- every test message uses phrasing absent from training",
+  "n_held_out_templates": 20,
+  "held_out_templates": [
+    "complaint:00",
+    "complaint:06",
+    "complaint:08",
+    "complaint:09",
+    "delivery_issue:01",
+    "delivery_issue:02",
+    "delivery_issue:07",
+    "delivery_issue:13",
+    "general_question:01",
+    "general_question:06",
+    "general_question:07",
+    "general_question:09",
+    "refund_request:02",
+    "refund_request:04",
+    "refund_request:10",
+    "refund_request:12",
+    "tracking_request:03",
+    "tracking_request:05",
+    "tracking_request:11",
+    "tracking_request:12"
+  ],
+  "components": {
+    "intent": {
+      "best_C": 0.5,
+      "cv_macro_f1": 1.0,
+      "test_macro_f1": 0.6476,
+      "test_accuracy": 0.6435,
+      "labels": [
+        "complaint",
+        "delivery_issue",
+        "general_question",
+        "refund_request",
+        "tracking_request"
+      ]
+    },
+    "sentiment": {
+      "best_C": 0.5,
+      "cv_macro_f1": 0.9202,
+      "test_macro_f1": 0.9121,
+      "test_accuracy": 0.9419,
+      "labels": [
+        "negative",
+        "neutral",
+        "positive"
+      ]
+    }
+  },
+  "naive_row_split_contrast": {
+    "intent_macro_f1": 1.0,
+    "note": "Same pipeline, same data, split by ROW instead of by template so train and test share phrasings. This number is inflated and is recorded only as a warning -- it is what the honest split replaced."
+  },
+  "end_to_end": {
+    "policy_accuracy": 0.6468,
+    "action_accuracy": 0.6468,
+    "note": "Deterministic rules applied to PREDICTED intent and sentiment. Errors here are classification errors; the policy layer is exact by construction."
+  },
+  "sklearn_version": "1.8.0",
+  "numpy_version": "2.4.2"
+}

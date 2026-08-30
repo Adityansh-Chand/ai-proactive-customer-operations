@@ -3,13 +3,54 @@
     {
       "event_type": "customer_decision",
       "payload": {
-        "policy": "offer_credit",
+        "planner": {
+          "tasks": [
+            "route",
+            "sentiment",
+            "policy",
+            "action"
+          ],
+          "priority": "normal"
+        },
+        "intent": {
+          "label": "delivery_issue",
+          "source": "classifier",
+          "confidence": 0.8481
+        },
+        "sentiment": {
+          "label": "negative",
+          "source": "classifier",
+          "confidence": 0.4795
+        },
+        "priority": {
+          "value": "high",
+          "source": "derived from account_tier and hours_to_sla (not from message text)",
+          "hours_to_sla": 4.0
+        },
+        "context": {
+          "intent": "my parcel still has not turned up and I am losing patience",
+          "customer_id": "cust_002",
+          "intent_label": "delivery_issue",
+          "sentiment": "negative",
+          "priority": "high",
+          "account_tier": "enterprise",
+          "hours_to_sla": 4.0,
+          "metadata": {}
+        },
+        "policy": {
+          "value": "escalate",
+          "rule": "high_priority_unhappy_customer",
+          "source": "deterministic rules in agents/policy_agent.py"
+        },
         "action": {
-          "type": "apply_credit",
-          "status": "applied"
-        }
+          "type": "create_ticket",
+          "status": "created",
+          "issue": "my parcel still has not turned up and I am losing patience"
+        },
+        "needs_human_review": false,
+        "route": "delivery_issue"
       },
-      "created_at": "2026-05-31 10:00:00"
+      "created_at": "2026-08-30 18:39:49"
     }
   ]
 }

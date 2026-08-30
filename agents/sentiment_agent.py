@@ -1,14 +1,11 @@
-NEGATIVE_TERMS = {"angry", "bad", "complaint", "disappointed", "frustrated", "late", "unacceptable"}
-POSITIVE_TERMS = {"great", "happy", "thanks", "thank", "resolved"}
+"""Sentiment classification.
+
+Was a 12-word set membership test. Now the fitted classifier from
+`training/train.py`; see `agents/classifiers.py`.
+"""
+from agents.classifiers import classify_sentiment
 
 
 def sentiment_agent(text):
-    tokens = set(text.lower().replace(".", " ").replace(",", " ").split())
-
-    if tokens & NEGATIVE_TERMS:
-        return "negative"
-
-    if tokens & POSITIVE_TERMS:
-        return "positive"
-
-    return "neutral"
+    label, _ = classify_sentiment(text)
+    return label

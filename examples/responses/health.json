@@ -1,3 +1,18 @@
 {
-  "status": "running"
+  "status": "running",
+  "model": {
+    "model_type": "TF-IDF (word + char n-grams) -> LogisticRegression, x2",
+    "data_source": "synthetic -- training/generate_corpus.py",
+    "architecture": "learned intent and sentiment, deterministic policy and action layer",
+    "split": "held-out TEMPLATES, not rows -- every test message uses phrasing absent from training",
+    "intent_macro_f1": 0.6476,
+    "sentiment_macro_f1": 0.9121,
+    "end_to_end_policy_accuracy": 0.6468,
+    "llm": {
+      "provider": "none",
+      "enabled": false,
+      "model": null,
+      "note": "all reported metrics come from the fitted classifier path"
+    }
+  }
 }

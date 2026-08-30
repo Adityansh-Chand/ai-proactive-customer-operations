@@ -12,9 +12,17 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: "3.13"
       - name: Install dependencies
         run: pip install -r requirements.txt
+
+      # Prove the committed corpus and classifiers are reproducible rather than
+      # trusting the files in the repo.
+      - name: Corpus is reproducible
+        run: python training/generate_corpus.py --check
+      - name: Committed metrics are reproducible
+        run: python training/train.py --verify
+
       - name: Run tests
         run: python -m pytest -q
       - name: Run evaluation
@@ -26,4 +34,4 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Build service image
-        run: docker build --file Dockerfile --tag customer-ops:${{ github.sha }} .
+        run: docker build --file Dockerfile --tag customer-operations:${{ github.sha }} .
