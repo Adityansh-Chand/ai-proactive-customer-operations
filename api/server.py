@@ -8,11 +8,26 @@ from monitoring.metrics import metrics
 from agents.classifiers import model_metadata
 from integrations.services import integration_status
 from orchestration.agent_dag import run_dag
+from orchestration.proactive import (
+    handle_incident_event,
+    outreach_log,
+    record_contact,
+    status as proactive_status,
+)
 from utils.security import current_request_id, request_id_middleware, require_api_key
 from utils.storage import recent_events, save_event
 
 app = FastAPI(title="AI Proactive Customer Operations", version="1.0.0")
 app.middleware("http")(request_id_middleware)
+
+
+class IncidentEvent(BaseModel):
+    """An event pushed by the incident detection platform."""
+
+    event_id: str = Field(..., min_length=1, max_length=200)
+    type: str = Field(..., min_length=1, max_length=100)
+    source: str = Field("", max_length=200)
+    payload: dict = Field(default_factory=dict)
 
 
 class DecisionRequest(BaseModel):
@@ -72,6 +87,7 @@ def health_check():
         "status": "running",
         "model": model_metadata(),
         "integrations": integration_status(),
+        "proactive": proactive_status(),
     }
 
 
@@ -101,5 +117,35 @@ def decide(request: DecisionRequest, http_request: Request):
         service=request.service,
         request_id=current_request_id(http_request),
     )
+    # Remember who contacted us about what, so an incident on that service can
+    # be pushed back to them proactively.
+    record_contact(request.customer_id, request.service, request.message)
+
     save_event("customer_decision", result)
     return result
+
+
+@app.post("/events/incident", dependencies=[Depends(require_api_key)])
+def receive_incident_event(event: IncidentEvent, http_request: Request):
+    """Receive an incident event and decide proactive outreach.
+
+    Delivery from the incident platform is at-least-once, so this endpoint is
+    idempotent: the same event_id twice produces one round of outreach and the
+    response says `duplicate`. Without that, a delivery retry would message the
+    same customers again.
+    """
+    metrics.increment("incident_events_total")
+    result = handle_incident_event(event.model_dump())
+    result["request_id"] = current_request_id(http_request)
+    save_event("proactive_outreach", {
+        "event_id": event.event_id, "type": event.type,
+        "service": result.get("service"), "notified": result.get("notified", 0),
+        "duplicate": result.get("duplicate", False),
+    })
+    return result
+
+
+@app.get("/proactive/outreach", dependencies=[Depends(require_api_key)])
+def proactive_outreach():
+    """Outreach batches generated from incident events."""
+    return {"status": proactive_status(), "batches": outreach_log()}
