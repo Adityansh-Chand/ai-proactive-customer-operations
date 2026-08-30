@@ -19,6 +19,12 @@ from agents.action_agent import action_agent
 from agents.classifiers import classify_intent, classify_sentiment, confidence
 from agents.planner_agent import planner_agent
 from agents.policy_agent import explain_policy
+from integrations.services import (
+    fetch_account_propensity,
+    fetch_grounding,
+    fetch_incident_status,
+    infer_service,
+)
 
 # Below this, the trace flags the decision for human review rather than trusting it.
 LOW_CONFIDENCE = 0.45
@@ -66,6 +72,8 @@ def run_dag(
     created_at=None,
     sla_due_at=None,
     metadata=None,
+    service=None,
+    request_id=None,
 ):
     metadata = metadata or {}
     trace = {}
@@ -97,6 +105,31 @@ def run_dag(
         "hours_to_sla": round(hours, 2),
     }
 
+    # Cross-service enrichment. Every one of these is optional: unconfigured or
+    # failing dependencies yield None, the outcome is recorded, and the decision
+    # proceeds on what this service knows by itself.
+    target_service = service or infer_service(user_input)
+    account, account_outcome = fetch_account_propensity(customer_id, request_id)
+    incident, incident_outcome = fetch_incident_status(target_service, request_id)
+    grounding, grounding_outcome = fetch_grounding(user_input, request_id)
+
+    enrichment = {"account": account, "incident": incident, "knowledge": grounding}
+    trace["enrichment"] = {
+        "account": {"source": "sales", "outcome": account_outcome, "data": account},
+        "incident": {
+            "source": "incident",
+            "outcome": incident_outcome,
+            "service": target_service,
+            "service_source": "explicit" if service else "inferred_from_message",
+            "data": incident,
+        },
+        "knowledge": {"source": "rag", "outcome": grounding_outcome, "data": grounding},
+        "note": (
+            "Enrichment is optional. 'not_configured' means the dependency is not "
+            "set; the decision below was made without it."
+        ),
+    }
+
     context = CustomerContext(
         intent=user_input,
         customer_id=customer_id,
@@ -108,15 +141,25 @@ def run_dag(
         metadata=metadata,
     )
     context_dict = asdict(context)
+    context_dict["incident"] = (incident or {}).get("incident")
     trace["context"] = context_dict
 
     policy, rule = explain_policy(
-        intent=intent_label, sentiment=sentiment_label, priority=priority
+        intent=intent_label,
+        sentiment=sentiment_label,
+        priority=priority,
+        enrichment=enrichment,
     )
+    enriched_rules = {
+        "known_incident_on_the_service_complained_about",
+        "high_value_account_at_risk",
+    }
     trace["policy"] = {
         "value": policy,
         "rule": rule,
         "source": "deterministic rules in agents/policy_agent.py",
+        # Makes it visible whether this decision depended on another service.
+        "used_enrichment": rule in enriched_rules,
     }
     trace["action"] = action_agent(policy, context_dict)
 
@@ -125,6 +168,9 @@ def run_dag(
     trace["needs_human_review"] = bool(
         min(intent_confidence, sentiment_confidence) < LOW_CONFIDENCE
     )
+
+    if request_id:
+        trace["request_id"] = request_id
 
     # Backwards-compatible flat keys for older callers.
     trace["route"] = intent_label
