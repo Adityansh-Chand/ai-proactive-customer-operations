@@ -6,8 +6,9 @@ from pydantic import BaseModel, Field
 
 from monitoring.metrics import metrics
 from agents.classifiers import model_metadata
+from integrations.services import integration_status
 from orchestration.agent_dag import run_dag
-from utils.security import request_id_middleware, require_api_key
+from utils.security import current_request_id, request_id_middleware, require_api_key
 from utils.storage import recent_events, save_event
 
 app = FastAPI(title="AI Proactive Customer Operations", version="1.0.0")
@@ -21,6 +22,8 @@ class DecisionRequest(BaseModel):
     # message text, so the same words route differently for an enterprise
     # account near its SLA than for a free account with days to spare.
     account_tier: str = Field("standard", pattern="^(free|standard|enterprise)$")
+    # Which service the contact is about. Explicit beats the message-text scan.
+    service: str | None = None
     created_at: str | None = None
     sla_due_at: str | None = None
     metadata: dict = Field(default_factory=dict)
@@ -65,7 +68,11 @@ def health():
 @app.get("/health")
 def health_check():
     """Health plus the identity of the classifiers actually loaded."""
-    return {"status": "running", "model": model_metadata()}
+    return {
+        "status": "running",
+        "model": model_metadata(),
+        "integrations": integration_status(),
+    }
 
 
 @app.get("/metrics")
@@ -79,7 +86,7 @@ def events(limit: int = 20):
 
 
 @app.post("/decide", dependencies=[Depends(require_api_key)])
-def decide(request: DecisionRequest):
+def decide(request: DecisionRequest, http_request: Request):
     if not request.message.strip():
         raise HTTPException(status_code=400, detail="Message cannot be empty")
 
@@ -91,6 +98,8 @@ def decide(request: DecisionRequest):
         created_at=request.created_at,
         sla_due_at=request.sla_due_at,
         metadata=request.metadata,
+        service=request.service,
+        request_id=current_request_id(http_request),
     )
     save_event("customer_decision", result)
     return result

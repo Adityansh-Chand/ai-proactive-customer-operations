@@ -151,6 +151,42 @@ docker compose up --build
 Kubernetes manifests live in `k8s/deployment.yaml` and include probes, resource
 limits, a Service, and a PVC for the SQLite event store.
 
+## Cross-service integration (optional)
+
+This service is the hub of the wider system. It can enrich a decision with three
+other services, and **every one of them is optional**:
+
+```
+SALES_API_URL       account propensity for the customer who wrote in
+INCIDENT_API_URL    is the service they are complaining about degraded?
+RAG_API_URL         a grounding passage for the reply
+INTEGRATION_API_KEY X-API-Key for all three, when they require one
+```
+
+Unset them and this service behaves exactly as documented above — the offline
+evaluation, the committed metrics, and all 32 standalone tests are unaffected,
+because enriched policy rules are **additive** and cannot fire without enrichment
+data. A test asserts that.
+
+What the edges change:
+
+| Enrichment | Effect |
+|---|---|
+| Active incident on the service | Policy becomes `incident_response` — the customer is linked to a known fault rather than issued an individual refund for something already being fixed |
+| High-propensity account, negative sentiment | Escalates for retention |
+| Retrieved passage | Grounds the reply |
+
+**An enrichment may improve a decision, but it may never prevent one.** Each call
+has a short timeout, one bounded retry, and a circuit breaker that stops calling a
+dead dependency. Every outcome — `ok`, `not_configured`, `timeout`, `circuit_open`,
+`error` — is recorded in the trace, and `policy.used_enrichment` says whether the
+decision actually depended on another service.
+
+`tests/test_integration.py` covers both paths against a real HTTP server: an
+unreachable dependency, a slow one, request-id propagation, and the connected
+cases. Writing those tests caught a real bug — the timeout was read at import
+time, so it could never have been reconfigured at runtime.
+
 ## Reviewer Status
 
 **What is real and independently checkable:**
