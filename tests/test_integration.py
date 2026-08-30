@@ -260,3 +260,106 @@ def test_service_inference_is_best_effort():
     assert infer_service("my checkout order failed") == "checkout"
     assert infer_service("the payments api is down") == "payments"
     assert infer_service("where is my parcel") is None
+
+
+# --- inbound events: proactive outreach ---------------------------------------
+
+from orchestration.proactive import (  # noqa: E402
+    handle_incident_event,
+    outreach_log,
+    record_contact,
+    recent_contacts,
+    reset as reset_proactive,
+)
+
+
+@pytest.fixture(autouse=True)
+def _clean_proactive():
+    reset_proactive()
+    yield
+    reset_proactive()
+
+
+def _event(event_id="evt-1", service="checkout", kind="incident.opened"):
+    return {
+        "event_id": event_id,
+        "type": kind,
+        "source": "ai-incident-detection-platform",
+        "payload": {"service": service, "incident": {"anomaly_count": 5}},
+    }
+
+
+def test_incident_event_notifies_customers_who_contacted_about_that_service():
+    record_contact("acct_1", "checkout", "my checkout is broken")
+    record_contact("acct_2", "checkout", "payment failed")
+    record_contact("acct_3", "search", "unrelated")
+
+    result = handle_incident_event(_event())
+
+    assert result["notified"] == 2
+    notified = {o["customer_id"] for o in result["outreach"]}
+    assert notified == {"acct_1", "acct_2"}
+
+
+def test_redelivery_does_not_notify_customers_twice():
+    """At-least-once delivery makes this the property that matters most.
+
+    Without it, a delivery retry messages the same customers again -- exactly the
+    bug that makes people distrust automated outreach.
+    """
+    record_contact("acct_1", "checkout")
+
+    first = handle_incident_event(_event(event_id="evt-dup"))
+    second = handle_incident_event(_event(event_id="evt-dup"))
+
+    assert first["notified"] == 1
+    assert second["duplicate"] is True
+    assert len(outreach_log()) == 1, "a redelivery must not create a second batch"
+
+
+def test_distinct_events_are_both_handled():
+    record_contact("acct_1", "checkout")
+    handle_incident_event(_event(event_id="evt-a"))
+    handle_incident_event(_event(event_id="evt-b"))
+    assert len(outreach_log()) == 2
+
+
+def test_incident_with_no_recent_contacts_notifies_nobody():
+    result = handle_incident_event(_event(service="billing"))
+    assert result["notified"] == 0
+    assert result["outreach"] == []
+
+
+def test_resolution_events_do_not_send_outreach():
+    record_contact("acct_1", "checkout")
+    result = handle_incident_event(_event(event_id="evt-r", kind="incident.resolved"))
+    assert result["outreach"] == []
+
+
+def test_unknown_event_types_are_ignored_safely():
+    result = handle_incident_event(_event(event_id="evt-x", kind="something.else"))
+    assert result["outreach"] == []
+
+
+def test_contacts_are_deduplicated_per_customer():
+    for _ in range(4):
+        record_contact("acct_1", "checkout")
+    assert len(recent_contacts("checkout")) == 1
+
+
+def test_anonymous_contacts_are_not_tracked():
+    record_contact("anonymous", "checkout")
+    record_contact("", "checkout")
+    assert recent_contacts("checkout") == []
+
+
+def test_decide_records_a_contact_for_later_outreach(monkeypatch):
+    """The audience for proactive outreach comes from /decide traffic."""
+    for var in ("SALES_API_URL", "INCIDENT_API_URL", "RAG_API_URL"):
+        monkeypatch.delenv(var, raising=False)
+    reset_clients()
+
+    record_contact("acct_77", "checkout", "checkout is failing")
+    result = handle_incident_event(_event(event_id="evt-flow"))
+
+    assert "acct_77" in {o["customer_id"] for o in result["outreach"]}

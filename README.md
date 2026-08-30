@@ -187,6 +187,28 @@ unreachable dependency, a slow one, request-id propagation, and the connected
 cases. Writing those tests caught a real bug — the timeout was read at import
 time, so it could never have been reconfigured at runtime.
 
+### Receiving events -- proactive outreach (optional)
+
+`POST /events/incident` accepts events from the incident platform. This is the
+only path in the service that starts without a customer asking, and it is what
+makes the name literally true.
+
+When a service becomes degraded, customers who recently contacted us **about that
+service** are notified that their problem is a known fault being worked on --
+unprompted. `GET /proactive/outreach` shows what was sent.
+
+Two things make this honest rather than decorative:
+
+- **Idempotency.** Inbound delivery is at-least-once, so the same event will
+  sometimes arrive twice. The handler deduplicates by `event_id`; a test asserts
+  a redelivery does not message the same customers again. Without that, a
+  delivery retry becomes a second message to the same person -- exactly the bug
+  that makes people distrust automated outreach.
+- **The audience comes from data this service actually holds.** A recent-contact
+  registry is populated by `/decide` itself. There is no customer database here,
+  and inventing one would be pretending: anyone who never wrote in is not
+  reachable from this service, and the response says so.
+
 ## Reviewer Status
 
 **What is real and independently checkable:**
