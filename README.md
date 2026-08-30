@@ -151,6 +151,64 @@ docker compose up --build
 Kubernetes manifests live in `k8s/deployment.yaml` and include probes, resource
 limits, a Service, and a PVC for the SQLite event store.
 
+## Cross-service integration (optional)
+
+This service is the hub of the wider system. It can enrich a decision with three
+other services, and **every one of them is optional**:
+
+```
+SALES_API_URL       account propensity for the customer who wrote in
+INCIDENT_API_URL    is the service they are complaining about degraded?
+RAG_API_URL         a grounding passage for the reply
+INTEGRATION_API_KEY X-API-Key for all three, when they require one
+```
+
+Unset them and this service behaves exactly as documented above — the offline
+evaluation, the committed metrics, and all 32 standalone tests are unaffected,
+because enriched policy rules are **additive** and cannot fire without enrichment
+data. A test asserts that.
+
+What the edges change:
+
+| Enrichment | Effect |
+|---|---|
+| Active incident on the service | Policy becomes `incident_response` — the customer is linked to a known fault rather than issued an individual refund for something already being fixed |
+| High-propensity account, negative sentiment | Escalates for retention |
+| Retrieved passage | Grounds the reply |
+
+**An enrichment may improve a decision, but it may never prevent one.** Each call
+has a short timeout, one bounded retry, and a circuit breaker that stops calling a
+dead dependency. Every outcome — `ok`, `not_configured`, `timeout`, `circuit_open`,
+`error` — is recorded in the trace, and `policy.used_enrichment` says whether the
+decision actually depended on another service.
+
+`tests/test_integration.py` covers both paths against a real HTTP server: an
+unreachable dependency, a slow one, request-id propagation, and the connected
+cases. Writing those tests caught a real bug — the timeout was read at import
+time, so it could never have been reconfigured at runtime.
+
+### Receiving events -- proactive outreach (optional)
+
+`POST /events/incident` accepts events from the incident platform. This is the
+only path in the service that starts without a customer asking, and it is what
+makes the name literally true.
+
+When a service becomes degraded, customers who recently contacted us **about that
+service** are notified that their problem is a known fault being worked on --
+unprompted. `GET /proactive/outreach` shows what was sent.
+
+Two things make this honest rather than decorative:
+
+- **Idempotency.** Inbound delivery is at-least-once, so the same event will
+  sometimes arrive twice. The handler deduplicates by `event_id`; a test asserts
+  a redelivery does not message the same customers again. Without that, a
+  delivery retry becomes a second message to the same person -- exactly the bug
+  that makes people distrust automated outreach.
+- **The audience comes from data this service actually holds.** A recent-contact
+  registry is populated by `/decide` itself. There is no customer database here,
+  and inventing one would be pretending: anyone who never wrote in is not
+  reachable from this service, and the response says so.
+
 ## Reviewer Status
 
 **What is real and independently checkable:**
