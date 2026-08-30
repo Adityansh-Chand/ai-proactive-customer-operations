@@ -8,25 +8,41 @@
     ],
     "priority": "normal"
   },
-  "route": "delivery_agent",
-  "sentiment": "neutral",
-  "context": {
-    "intent": "My package is delayed but I just need help",
-    "customer_id": "cust_002",
-    "route": "delivery_agent",
-    "sentiment": "neutral",
-    "priority": "normal",
-    "delay_risk": true,
-    "metadata": {
-      "channel": "chat",
-      "account_tier": "standard"
-    }
+  "intent": {
+    "label": "delivery_issue",
+    "source": "classifier",
+    "confidence": 0.8481
   },
-  "policy": "offer_credit",
+  "sentiment": {
+    "label": "negative",
+    "source": "classifier",
+    "confidence": 0.4795
+  },
+  "priority": {
+    "value": "high",
+    "source": "derived from account_tier and hours_to_sla (not from message text)",
+    "hours_to_sla": 4.0
+  },
+  "context": {
+    "intent": "my parcel still has not turned up and I am losing patience",
+    "customer_id": "cust_002",
+    "intent_label": "delivery_issue",
+    "sentiment": "negative",
+    "priority": "high",
+    "account_tier": "enterprise",
+    "hours_to_sla": 4.0,
+    "metadata": {}
+  },
+  "policy": {
+    "value": "escalate",
+    "rule": "high_priority_unhappy_customer",
+    "source": "deterministic rules in agents/policy_agent.py"
+  },
   "action": {
-    "type": "apply_credit",
-    "status": "applied",
-    "user": "cust_002",
-    "amount": 10
-  }
+    "type": "create_ticket",
+    "status": "created",
+    "issue": "my parcel still has not turned up and I am losing patience"
+  },
+  "needs_human_review": false,
+  "route": "delivery_issue"
 }
