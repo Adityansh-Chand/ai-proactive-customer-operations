@@ -1,8 +1,13 @@
 """API versioning: /v1 is the contract, the bare path is a deprecated alias.
 
-Both are served by one set of handlers. These tests exist because "we added
-versioning" is easy to claim and easy to half-do -- a router mounted but not
-reachable, or an alias that quietly diverges from the versioned route.
+These tests issue real requests rather than inspecting `app.routes`. The first
+version did inspect it and passed locally while failing in CI: Starlette 1.6 no
+longer lists included-router routes on that attribute, though the endpoints
+themselves serve perfectly. Asserting on an internal attribute tested the
+framework's bookkeeping instead of whether the API works.
+
+A route that exists answers something -- 200, 401, 405, 422. Only a route that
+does not exist answers 404, so that is what these assert on.
 """
 import sys
 from pathlib import Path
@@ -17,37 +22,38 @@ from api.server import API_VERSION, app  # noqa: E402
 
 client = TestClient(app)
 
-# Endpoints that must exist under /v1. Infrastructure routes (/health, /metrics,
-# /version) are deliberately NOT versioned: they describe the process, not the
-# API, and a monitoring system should not have to follow an API version bump.
-VERSIONED = ['/events', '/decide', '/events/incident', '/proactive/outreach']
+# (method, path) for every data endpoint that must live under /v1.
+VERSIONED = [('GET', '/events'), ('POST', '/decide'), ('POST', '/events/incident'), ('GET', '/proactive/outreach')]
+
+# Infrastructure routes are deliberately NOT versioned: they describe the
+# process, not the API, and a monitoring system should not have to follow an API
+# version bump to keep scraping.
 UNVERSIONED_BY_DESIGN = ["/health", "/metrics", "/version"]
 
 
-def registered():
-    return {route.path for route in app.routes if hasattr(route, "path")}
+def reaches(method, path):
+    """True when the route exists, whatever it then decides to answer."""
+    response = client.request(method, path, json={})
+    return response.status_code != 404
 
 
-def test_every_data_endpoint_is_served_under_v1():
-    paths = registered()
-    for endpoint in VERSIONED:
-        assert f"/{API_VERSION}{endpoint}" in paths, f"{endpoint} missing under /v1"
+@pytest.mark.parametrize("method,path", VERSIONED)
+def test_every_data_endpoint_is_served_under_v1(method, path):
+    assert reaches(method, f"/{API_VERSION}{path}"), f"{path} missing under /v1"
 
 
-def test_unversioned_alias_still_serves_existing_consumers():
+@pytest.mark.parametrize("method,path", VERSIONED)
+def test_unversioned_alias_still_serves_existing_consumers(method, path):
     """Removing the alias is a breaking change; it is a deprecation path."""
-    paths = registered()
-    for endpoint in VERSIONED:
-        assert endpoint in paths, f"{endpoint} alias removed -- that breaks consumers"
+    assert reaches(method, path), f"{path} alias removed -- that breaks consumers"
 
 
-def test_infrastructure_endpoints_are_not_versioned():
-    paths = registered()
-    for endpoint in UNVERSIONED_BY_DESIGN:
-        assert endpoint in paths
-        assert f"/{API_VERSION}{endpoint}" not in paths, (
-            f"{endpoint} should not be versioned -- monitoring must not chase API versions"
-        )
+@pytest.mark.parametrize("path", UNVERSIONED_BY_DESIGN)
+def test_infrastructure_endpoints_are_not_versioned(path):
+    assert reaches("GET", path)
+    assert not reaches("GET", f"/{API_VERSION}{path}"), (
+        f"{path} should not be versioned -- monitoring must not chase API versions"
+    )
 
 
 def test_version_endpoint_declares_what_is_supported():
