@@ -1,0 +1,157 @@
+{
+  "model_type": "TF-IDF (word + char n-grams) -> LogisticRegression",
+  "note": "same pipeline as the served intent router, fitted on real messages",
+  "data_source": "REAL -- BANKING77 (CC BY 4.0)",
+  "citation": "Casanueva, Temcinas, Gerz, Henderson and Vulic, 'Efficient Intent Detection with Dual Sentence Encoders', NLP4ConvAI 2020",
+  "url": "https://huggingface.co/datasets/PolyAI/banking77",
+  "task": "classify a real customer message into one of 77 banking intents",
+  "component": "intent only -- BANKING77 has no sentiment labels",
+  "split": "official BANKING77 train/test split, used as shipped",
+  "n_train": 10003,
+  "n_test": 3080,
+  "n_classes": 77,
+  "best_C": 10.0,
+  "cv_macro_f1": 0.8981,
+  "test_macro_f1": 0.9164,
+  "test_accuracy": 0.9162,
+  "baselines": {
+    "random_choice_accuracy": 0.013,
+    "majority_class_accuracy": 0.013,
+    "majority_class_label": "card_payment_fee_charged"
+  },
+  "leakage_check": {
+    "verbatim_train_test_overlap": 6,
+    "overlap_pct_of_test": 0.195,
+    "note": "verbatim duplicates between the two official files; small enough not to explain the score, and a property of the dataset rather than of any split we chose"
+  },
+  "test_class_support": {
+    "min": 40,
+    "max": 40,
+    "note": "the official test set is balanced, which is why macro-F1 and accuracy nearly coincide"
+  },
+  "hardest_classes": [
+    {
+      "intent": "balance_not_updated_after_bank_transfer",
+      "f1": 0.747
+    },
+    {
+      "intent": "top_up_failed",
+      "f1": 0.8101
+    },
+    {
+      "intent": "failed_transfer",
+      "f1": 0.8182
+    },
+    {
+      "intent": "unable_to_verify_identity",
+      "f1": 0.825
+    },
+    {
+      "intent": "card_not_working",
+      "f1": 0.8352
+    }
+  ],
+  "easiest_classes": [
+    {
+      "intent": "age_limit",
+      "f1": 0.9877
+    },
+    {
+      "intent": "edit_personal_details",
+      "f1": 0.9877
+    },
+    {
+      "intent": "apple_pay_or_google_pay",
+      "f1": 1.0
+    },
+    {
+      "intent": "passcode_forgotten",
+      "f1": 1.0
+    },
+    {
+      "intent": "verify_top_up",
+      "f1": 1.0
+    }
+  ],
+  "per_class_f1": {
+    "Refund_not_showing_up": 0.9487,
+    "activate_my_card": 0.962,
+    "age_limit": 0.9877,
+    "apple_pay_or_google_pay": 1.0,
+    "atm_support": 0.95,
+    "automatic_top_up": 0.962,
+    "balance_not_updated_after_bank_transfer": 0.747,
+    "balance_not_updated_after_cheque_or_cash_deposit": 0.962,
+    "beneficiary_not_allowed": 0.9474,
+    "cancel_transfer": 0.9487,
+    "card_about_to_expire": 0.9873,
+    "card_acceptance": 0.925,
+    "card_arrival": 0.8974,
+    "card_delivery_estimate": 0.8889,
+    "card_linking": 0.9512,
+    "card_not_working": 0.8352,
+    "card_payment_fee_charged": 0.9231,
+    "card_payment_not_recognised": 0.9,
+    "card_payment_wrong_exchange_rate": 0.9114,
+    "card_swallowed": 0.9487,
+    "cash_withdrawal_charge": 0.95,
+    "cash_withdrawal_not_recognised": 0.8941,
+    "change_pin": 0.9744,
+    "compromised_card": 0.9136,
+    "contactless_not_working": 0.961,
+    "country_support": 0.9512,
+    "declined_card_payment": 0.9195,
+    "declined_cash_withdrawal": 0.8916,
+    "declined_transfer": 0.8767,
+    "direct_debit_payment_not_recognised": 0.9091,
+    "disposable_card_limits": 0.8831,
+    "edit_personal_details": 0.9877,
+    "exchange_charge": 0.8889,
+    "exchange_rate": 0.9512,
+    "exchange_via_app": 0.8916,
+    "extra_charge_on_statement": 0.8861,
+    "failed_transfer": 0.8182,
+    "fiat_currency_support": 0.8611,
+    "get_disposable_virtual_card": 0.8974,
+    "get_physical_card": 0.9157,
+    "getting_spare_card": 0.9114,
+    "getting_virtual_card": 0.8837,
+    "lost_or_stolen_card": 0.9268,
+    "lost_or_stolen_phone": 0.9873,
+    "order_physical_card": 0.875,
+    "passcode_forgotten": 1.0,
+    "pending_card_payment": 0.925,
+    "pending_cash_withdrawal": 0.9351,
+    "pending_top_up": 0.8889,
+    "pending_transfer": 0.8354,
+    "pin_blocked": 0.8684,
+    "receiving_money": 0.9744,
+    "request_refund": 0.9024,
+    "reverted_card_payment?": 0.8916,
+    "supported_cards_and_currencies": 0.9524,
+    "terminate_account": 0.9756,
+    "top_up_by_bank_transfer_charge": 0.9231,
+    "top_up_by_card_charge": 0.9756,
+    "top_up_by_cash_or_cheque": 0.95,
+    "top_up_failed": 0.8101,
+    "top_up_limits": 0.9383,
+    "top_up_reverted": 0.8571,
+    "topping_up_by_card": 0.8684,
+    "transaction_charged_twice": 0.9524,
+    "transfer_fee_charged": 0.963,
+    "transfer_into_account": 0.8861,
+    "transfer_not_received_by_recipient": 0.8537,
+    "transfer_timing": 0.8831,
+    "unable_to_verify_identity": 0.825,
+    "verify_my_identity": 0.8642,
+    "verify_source_of_funds": 0.9639,
+    "verify_top_up": 1.0,
+    "virtual_card_not_working": 0.9189,
+    "visa_or_mastercard": 0.961,
+    "why_verify_identity": 0.8608,
+    "wrong_amount_of_cash_received": 0.9231,
+    "wrong_exchange_rate_for_cash_withdrawal": 0.8462
+  },
+  "sklearn_version": "1.8.0",
+  "numpy_version": "2.4.2"
+}
