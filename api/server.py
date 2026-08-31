@@ -109,8 +109,14 @@ def metrics_endpoint():
 
 
 @api.get("/events", dependencies=[Depends(require_api_key)])
-def events(limit: int = 20):
-    return {"events": recent_events(limit=min(limit, 100))}
+def events(limit: int = 20, request_id: str | None = None):
+    """Recent events, optionally narrowed to one request id.
+
+    `request_id` is what makes this endpoint a trace source rather than a log
+    tail: the portfolio's scripts/trace.py asks all five services the same
+    question and joins the answers into one timeline.
+    """
+    return {"events": recent_events(limit=min(limit, 100), request_id=request_id)}
 
 
 @api.post("/decide", dependencies=[Depends(require_api_key)])
@@ -133,7 +139,7 @@ def decide(request: DecisionRequest, http_request: Request):
     # be pushed back to them proactively.
     record_contact(request.customer_id, request.service, request.message)
 
-    save_event("customer_decision", result)
+    save_event("customer_decision", result, current_request_id(http_request))
     return result
 
 
@@ -153,7 +159,7 @@ def receive_incident_event(event: IncidentEvent, http_request: Request):
         "event_id": event.event_id, "type": event.type,
         "service": result.get("service"), "notified": result.get("notified", 0),
         "duplicate": result.get("duplicate", False),
-    })
+    }, result["request_id"])
     return result
 
 
