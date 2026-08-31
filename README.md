@@ -182,6 +182,33 @@ Default is `none`. **Every metric above comes from the fitted classifier path.**
 LLM results would depend on a vendor, a model version and a sampling temperature,
 and no reviewer could reproduce them.
 
+### Drift detection
+
+A fitted model degrades quietly: nothing throws, the numbers simply stop
+describing the world. This service watches its **predicted intent mix** — whether the mix of things customers are asking for has moved — and reports
+a status rather than raising an alarm.
+
+```bash
+curl localhost:8000/v1/drift
+```
+
+categorical PSI over predicted intents. Population Stability Index, read against the conventional thresholds:
+below 0.10 stable, below 0.25 a moderate shift worth looking at, at or above 0.25
+a significant one.
+
+Three states exist besides a verdict, and each is reported rather than guessed:
+`insufficient_data` below 50 observations, `no_reference` when training left none,
+and a count of classes the reference never saw.
+
+**Classifier confidence was tried first and rejected.** On a template-generated
+corpus it is bimodal — near 1.0 on phrasings the model effectively memorised, much
+lower on anything else — so PSI swung on ordinary traffic and reported drift that
+was not there. A monitor that cries wolf teaches people to ignore it. The reasoning
+is recorded in `monitoring/drift.py`.
+
+Tests assert the monitor is **quiet on in-distribution data and loud on shifted
+data**. One direction alone would not be evidence of anything.
+
 ### Distributed tracing
 
 Every event is stored with the request id that produced it, and `/v1/events`
