@@ -1,9 +1,12 @@
 
+from pathlib import Path
+
 from fastapi import APIRouter, Depends, FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
+from monitoring.drift import DriftMonitor
 from monitoring.metrics import metrics
 from agents.classifiers import model_metadata
 from integrations.services import integration_status
@@ -31,6 +34,15 @@ API_VERSION = "v1"
 # The unversioned alias is kept because consumers already call it. It is the
 # deprecation path, not a permanent second interface.
 api = APIRouter()
+
+# The mix of intents this router is predicting, against the mix seen at training
+# time. If the share of refund requests doubles, something changed -- and unlike
+# classifier confidence, that signal does not swing on phrasing the model happens
+# to have memorised.
+ARTIFACT_DIR = Path(__file__).resolve().parents[1] / "models" / "artifacts"
+drift_monitor = DriftMonitor.from_file(
+    ARTIFACT_DIR / "drift_reference.json", name="intent_mix"
+)
 
 
 class IncidentEvent(BaseModel):
@@ -139,6 +151,10 @@ def decide(request: DecisionRequest, http_request: Request):
     # be pushed back to them proactively.
     record_contact(request.customer_id, request.service, request.message)
 
+    predicted_intent = (result.get("intent") or {}).get("label")
+    if predicted_intent:
+        drift_monitor.observe(predicted_intent)
+
     save_event("customer_decision", result, current_request_id(http_request))
     return result
 
@@ -167,6 +183,12 @@ def receive_incident_event(event: IncidentEvent, http_request: Request):
 def proactive_outreach():
     """Outreach batches generated from incident events."""
     return {"status": proactive_status(), "batches": outreach_log()}
+
+
+@api.get("/drift", dependencies=[Depends(require_api_key)])
+def drift():
+    """Is the mix of intents still what this router was fitted on?"""
+    return drift_monitor.report()
 
 
 @app.get("/version")

@@ -1,0 +1,18 @@
+{
+  "kind": "categorical",
+  "classes": [
+    "complaint",
+    "delivery_issue",
+    "general_question",
+    "refund_request",
+    "tracking_request"
+  ],
+  "proportions": [
+    0.19916666666666666,
+    0.20291666666666666,
+    0.195,
+    0.2025,
+    0.20041666666666666
+  ],
+  "n_reference": 2400
+}
