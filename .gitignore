@@ -29,3 +29,7 @@ data/
 .idea/
 .vscode/
 
+
+# Real datasets are fetched by training/fetch_real_data.py, not committed:
+# they are large, and leaving licensing to the upstream source keeps terms simple.
+datasets/real/
