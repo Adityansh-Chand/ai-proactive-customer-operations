@@ -36,11 +36,14 @@ from sklearn.pipeline import FeatureUnion, Pipeline
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
+from monitoring.drift import build_categorical_reference  # noqa: E402
+
 from agents.action_agent import action_for_policy  # noqa: E402
 from agents.policy_agent import decide_policy  # noqa: E402
 
 DATA_PATH = ROOT / "datasets" / "messages.csv"
 ARTIFACT_DIR = ROOT / "models" / "artifacts"
+DRIFT_REFERENCE_PATH = ARTIFACT_DIR / "drift_reference.json"
 INTENT_PATH = ARTIFACT_DIR / "intent_classifier.joblib"
 SENTIMENT_PATH = ARTIFACT_DIR / "sentiment_classifier.joblib"
 METRICS_PATH = ARTIFACT_DIR / "metrics.json"
@@ -123,6 +126,20 @@ def train():
 
     # The test split is scored here, once.
     predicted_intent = intent_model.predict(messages[test_idx])
+
+    # Drift reference over the PREDICTED INTENT MIX, not classifier confidence.
+    #
+    # Confidence was tried first and abandoned. On a template-generated corpus it
+    # is bimodal -- near 1.0 on phrasings the model effectively memorised, much
+    # lower on anything else -- so PSI swung wildly on ordinary traffic and
+    # reported drift that was not there. A monitor that cries wolf gets ignored.
+    #
+    # The mix of predicted intents is the robust signal: if the share of refund
+    # requests doubles, something changed, regardless of how confident the model
+    # happens to feel about each one.
+    drift_reference = build_categorical_reference(
+        intent_model.predict(messages)
+    )
     predicted_sentiment = sentiment_model.predict(messages[test_idx])
 
     # Deliberate contrast: the same pipeline under a naive ROW-level split, where
@@ -220,7 +237,7 @@ def train():
             test_rows["sentiment"], predicted_sentiment, zero_division=0
         ),
     }
-    return intent_model, sentiment_model, metrics, reports
+    return intent_model, sentiment_model, metrics, reports, drift_reference
 
 
 def render_model_card(metrics):
@@ -288,7 +305,7 @@ def main():
     parser.add_argument("--verify", action="store_true")
     args = parser.parse_args()
 
-    intent_model, sentiment_model, metrics, reports = train()
+    intent_model, sentiment_model, metrics, reports, drift_reference = train()
 
     if args.verify:
         if not METRICS_PATH.exists():
@@ -308,6 +325,11 @@ def main():
     joblib.dump(sentiment_model, SENTIMENT_PATH)
     METRICS_PATH.write_text(json.dumps(metrics, indent=2) + "\n", encoding="utf-8")
     MODEL_CARD_PATH.write_text(render_model_card(metrics), encoding="utf-8")
+    # Router confidence on the training corpus, so the running service can tell
+    # whether it is still reading the kind of language it was fitted on.
+    DRIFT_REFERENCE_PATH.write_text(
+        json.dumps(drift_reference, indent=2) + "\n", encoding="utf-8"
+    )
 
     intent = metrics["components"]["intent"]
     sentiment = metrics["components"]["sentiment"]
