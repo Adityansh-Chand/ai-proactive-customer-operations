@@ -182,6 +182,20 @@ Default is `none`. **Every metric above comes from the fitted classifier path.**
 LLM results would depend on a vendor, a model version and a sampling temperature,
 and no reviewer could reproduce them.
 
+### Distributed tracing
+
+Every event is stored with the request id that produced it, and `/v1/events`
+accepts a `request_id` filter. That is what makes a cross-service trace joinable:
+the id already crossed service boundaries, but until it was recorded next to the
+event there was nothing to join on.
+
+```bash
+curl "localhost:8000/v1/events?request_id=demo-1a2b3c4d"
+```
+
+The portfolio repo's `scripts/trace.py` asks all five services this question and
+merges the answers into one ordered timeline.
+
 ## API versioning
 
 Data endpoints are served under **`/v1`**. The same endpoints remain available at
