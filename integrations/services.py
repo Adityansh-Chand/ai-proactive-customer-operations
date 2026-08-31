@@ -13,6 +13,12 @@ import re
 
 from integrations.client import NOT_CONFIGURED, OK, ServiceClient
 
+# Providers serve their data endpoints under /v1 and also, for now, at the bare
+# path. Calling the versioned one is what makes the version guarantee real: a
+# provider can then change a response shape behind /v2 without breaking this
+# consumer on the same deploy.
+API = "/v1"
+
 # Kept module-level so the circuit breakers persist across requests -- a breaker
 # rebuilt per request would never actually open.
 _clients = {}
@@ -61,7 +67,7 @@ def fetch_account_propensity(account_id, request_id=None):
         return None, "no_account_id"
 
     data, outcome = sales_client().get(
-        f"/accounts/{account_id}/score", request_id=request_id
+        f"{API}/accounts/{account_id}/score", request_id=request_id
     )
     if outcome != OK or not isinstance(data, dict):
         return None, outcome
@@ -83,7 +89,7 @@ def fetch_incident_status(service, request_id=None):
         return None, "no_service"
 
     data, outcome = incident_client().get(
-        "/incidents/active", request_id=request_id, params={"service": service}
+        f"{API}/incidents/active", request_id=request_id, params={"service": service}
     )
     if outcome != OK or not isinstance(data, dict):
         return None, outcome
@@ -102,7 +108,7 @@ def fetch_grounding(query, request_id=None, max_chars=400):
         return None, "no_query"
 
     data, outcome = rag_client().get(
-        "/query", request_id=request_id, params={"q": query}
+        f"{API}/query", request_id=request_id, params={"q": query}
     )
     if outcome != OK or not isinstance(data, dict):
         return None, outcome

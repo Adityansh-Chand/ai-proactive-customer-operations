@@ -26,6 +26,7 @@ class _Stub(BaseHTTPRequestHandler):
 
     routes = {}
     seen_headers = []
+    seen_paths = []
     delay = 0.0
 
     def do_GET(self):  # noqa: N802
@@ -33,6 +34,12 @@ class _Stub(BaseHTTPRequestHandler):
         if type(self).delay:
             time.sleep(type(self).delay)
         path = self.path.split("?")[0]
+        type(self).seen_paths.append(path)
+        # Real providers serve each endpoint at BOTH /v1/... and the bare path,
+        # so the stub does too and the route tables below stay version-agnostic.
+        # `seen_paths` is what proves the consumer actually asked for /v1.
+        if path.startswith("/v1/"):
+            path = path[len("/v1"):]
         if path in type(self).routes:
             body = json.dumps(type(self).routes[path]).encode()
             self.send_response(200)
@@ -51,6 +58,7 @@ class _Stub(BaseHTTPRequestHandler):
 def stub():
     _Stub.routes = {}
     _Stub.seen_headers = []
+    _Stub.seen_paths = []
     _Stub.delay = 0.0
     server = HTTPServer(("127.0.0.1", 0), _Stub)
     thread = threading.Thread(target=server.serve_forever, daemon=True)
@@ -363,3 +371,23 @@ def test_decide_records_a_contact_for_later_outreach(monkeypatch):
     result = handle_incident_event(_event(event_id="evt-flow"))
 
     assert "acct_77" in {o["customer_id"] for o in result["outreach"]}
+
+
+def test_enrichment_calls_the_versioned_endpoint(stub, monkeypatch):
+    """The consumer must ask for /v1, not the deprecated bare path.
+
+    Providers currently serve both, so calling the wrong one still works and the
+    mistake would be invisible until the alias is removed. This asserts the
+    version guarantee is actually being used rather than merely offered.
+    """
+    _, base = stub
+    _Stub.routes = {"/accounts/acct_00001/score": {"score": 0.9, "segment": "high_propensity"}}
+    monkeypatch.setenv("SALES_API_URL", base)
+    reset_clients()
+
+    run_dag("checkout keeps failing", customer_id="acct_00001")
+
+    assert _Stub.seen_paths, "the enrichment call never reached the provider"
+    assert all(path.startswith("/v1/") for path in _Stub.seen_paths), (
+        f"consumer used unversioned paths: {_Stub.seen_paths}"
+    )
