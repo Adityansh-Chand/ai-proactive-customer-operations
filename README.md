@@ -182,6 +182,30 @@ Default is `none`. **Every metric above comes from the fitted classifier path.**
 LLM results would depend on a vendor, a model version and a sampling temperature,
 and no reviewer could reproduce them.
 
+## API versioning
+
+Data endpoints are served under **`/v1`**. The same endpoints remain available at
+the unversioned path as a **deprecated alias**, so consumers written before
+versioning keep working; new callers should use `/v1`.
+
+```bash
+curl localhost:8000/version
+```
+
+`/health`, `/metrics` and `/version` are deliberately **not** versioned. They
+describe the process rather than the API, and a monitoring system should not have
+to follow an API version bump to keep scraping.
+
+Both paths are served by one set of handlers, so the alias cannot drift from the
+versioned route. `tests/test_api_versioning.py` asserts every data endpoint is
+reachable under `/v1`, that the alias still exists, and that infrastructure
+endpoints stay unversioned.
+
+Why it matters here: without a version prefix there is no way for this service to
+change a response shape without breaking every consumer on the same deploy. The
+consumer-driven contract checks in the portfolio repo *detect* that breakage —
+they do not prevent it.
+
 ## Run
 
 ```bash

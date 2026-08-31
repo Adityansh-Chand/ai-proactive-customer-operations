@@ -1,5 +1,10 @@
-fastapi
-uvicorn
+# Pinned deliberately. scikit-learn is pinned because joblib artifacts are
+# version-sensitive; fastapi and uvicorn are pinned for the same reason CI exists:
+# an unpinned `fastapi` silently resolved across a MAJOR starlette release
+# (0.52 -> 1.6) between a local run and a CI run, which produced a failure that
+# looked like a code bug and was a version drift.
+fastapi==0.141.1
+uvicorn==0.52.4
 pandas
 numpy
 scikit-learn==1.8.0
