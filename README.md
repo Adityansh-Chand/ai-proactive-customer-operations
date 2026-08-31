@@ -359,6 +359,10 @@ Two things make this honest rather than decorative:
 - The inflated naive-split number retained and labelled, not deleted.
 - Deterministic policy rules with named attribution in every trace.
 - Corpus and training reproducible, verified in CI.
+- [Architecture decision records](docs/adr/) for the three contested choices — where the
+  learned/written line was drawn, why the inflated number is kept rather than deleted, and
+  the standing rule that a result beating its own prediction gets investigated before it
+  gets published.
 
 **What is explicitly not real:**
 
